@@ -1,4 +1,9 @@
+venv
 .venv
+.venv/
+.vscode/
+__pycache__
+*.pyc
 # Ignore the specific files
 barblogo_400x400.jpg
 styled_qr_black_gold.png
@@ -7,4 +12,3 @@ styled_qr_black_gold.png
 *.png
 *.jpg
 *.jpeg
-
