@@ -1,3 +1,4 @@
+import sys
 import qrcode
 from PIL import Image, ImageDraw
 
@@ -10,9 +11,25 @@ from PIL import Image, ImageDraw
 # Example for South Africa (+27): "https://wa.me/27XXXXXXXXX"
 #Prefil message 
 #Example data = "https://wa.me/27XXXXXXXXX?text=Hey!%20Just%20scanning%20in%20from%20the%20shop,%20ready%20to%20send%20through%20my%20feedback."
-data = "https://wa.me/27XXXXXXXXX?text=Hey!%20Just%20scanning%20in%20from%20the%20shop,%20ready%20to%20send%20through%20my%20feedback."
+
+whatsapp_url = "https://wa.me/27XXXXXXXXX?text=Hey!%20Just%20scanning%20in%20from%20the%20shop,%20ready%20to%20send%20through%20my%20feedback."
+instagram_url = "https://instagram.com/your_handle"
 logo_path = "barblogo_400x400.jpg"
-output_file = "styled_qr_black_gold.png"
+
+# Read platform from command line argument (Defaults to 'whatsapp' if empty)
+platform = sys.argv[1].lower() if len(sys.argv) > 1 else "whatsapp"
+
+if platform == "whatsapp":
+    data = whatsapp_url
+    output_file = "qr_whatsapp_black.png"
+    print("🖤 Selected: WhatsApp (Solid Black Style)")
+elif platform == "instagram":
+    data = instagram_url
+    output_file = "qr_instagram_gradient.png"
+    print("🎨 Selected: Instagram (Black & Gold Gradient Style)")
+else:
+    print(f"❌ Unknown platform '{platform}'. Please use 'whatsapp' or 'instagram'.")
+    sys.exit(1)
 
 # ===============================
 # GENERATE QR MATRIX
@@ -30,69 +47,33 @@ size = len(matrix)
 box = 10
 img_size = (size + qr.border*2) * box
 
-# White background
+# White canvas
 img = Image.new("RGB", (img_size, img_size), "white")
 draw = ImageDraw.Draw(img)
 
-# ===============================
-# COLOR DEFINITIONS
-# ===============================
+# Color palettes
 black = (0, 0, 0)
 gold = (212, 175, 55)
 
-""" # ===============================
-# DRAW QR MODULES (BLACK GOLD GRADIENT)
+# ===============================
+# DRAW QR MODULES
 # ===============================
 for y, row in enumerate(matrix):
     for x, cell in enumerate(row):
         if cell:
-            # Gradient ratio (top: black, bottom: gold)
-            ratio = y / size
-            r = int(black[0] * (1 - ratio) + gold[0] * ratio)
-            g = int(black[1] * (1 - ratio) + gold[1] * ratio)
-            b = int(black[2] * (1 - ratio) + gold[2] * ratio)
-            color = (r, g, b)
+            if platform == "instagram":
+                # Elegant curved gradient for Instagram (Fades smoothly to gold at the bottom)
+                linear_ratio = y / size
+                ratio = linear_ratio ** 2 
+                r = int(black[0] * (1 - ratio) + gold[0] * ratio)
+                g = int(black[1] * (1 - ratio) + gold[1] * ratio)
+                b = int(black[2] * (1 - ratio) + gold[2] * ratio)
+                color = (r, g, b)
+            else:
+                # Timeless solid black for WhatsApp
+                color = black
 
-            # Draw rounded dots
-            x1 = (x + qr.border) * box
-            y1 = (y + qr.border) * box
-            draw.ellipse([x1, y1, x1+box, y1+box], fill=color)
-
-# ===============================
-# STYLE QR "EYES" (POSITION MARKERS)
-# ===============================
-eye_size = 7  # Eye modules are 7x7 in QR spec
-eye_positions = [(0, 0), (size-eye_size, 0), (0, size-eye_size)]
-
-for ex, ey in eye_positions:
-    x0 = (ex + qr.border)*box
-    y0 = (ey + qr.border)*box
-    w = eye_size * box
-
-    # Outer eye (gold)
-    draw.rectangle([x0, y0, x0+w, y0+w], fill=gold)
-
-    # Inner eye (white space for contrast)
-    inner = box * 3
-    offset = (w - inner) // 2
-    draw.rectangle([x0+offset, y0+offset, x0+offset+inner, y0+offset+inner], fill="white")
-
-    # Central dot (black)
-    dot = box * 1.5
-    dot_offset = (w - dot) // 2
-    draw.ellipse([x0+dot_offset, y0+dot_offset, x0+dot_offset+dot, y0+dot_offset+dot], fill=black)
- """
-
-# ===============================
-# DRAW QR MODULES (SOLID BLACK)
-# ===============================
-for y, row in enumerate(matrix):
-    for x, cell in enumerate(row):
-        if cell:
-            # Solid black for all dots
-            color = black
-
-            # Draw rounded dots
+            # Draw modules as rounded dots
             x1 = (x + qr.border) * box
             y1 = (y + qr.border) * box
             draw.ellipse([x1, y1, x1+box, y1+box], fill=color)
@@ -108,61 +89,66 @@ for ex, ey in eye_positions:
     y0 = (ey + qr.border)*box
     w = eye_size * box
 
-    # Outer eye (Solid Black)
+    # Outer Frame (Always solid black to keep it looking clean and premium)
     draw.rectangle([x0, y0, x0+w, y0+w], fill=black)
 
-    # Inner eye (white space for contrast)
+    # Inner Frame Spacer (White gap)
     inner = box * 3
     offset = (w - inner) // 2
     draw.rectangle([x0+offset, y0+offset, x0+offset+inner, y0+offset+inner], fill="white")
 
-    # Central dot (Solid Black)
+    # Center Target Dot (Gold accent for Instagram, solid Black for WhatsApp)
+    center_color = gold if platform == "instagram" else black
     dot = box * 1.5
     dot_offset = (w - dot) // 2
-    draw.ellipse([x0+dot_offset, y0+dot_offset, x0+dot_offset+dot, y0+dot_offset+dot], fill=black)
+    draw.ellipse([x0+dot_offset, y0+dot_offset, x0+dot_offset+dot, y0+dot_offset+dot], fill=center_color)
 
 # ===============================
-# ADD CENTER LOGO
-# ===============================
-if logo_path:
-    logo = Image.open(logo_path).convert("RGBA")
-    max_logo_size = img_size // 5  # Made slightly larger so it looks crisp
-    logo.thumbnail((max_logo_size, max_logo_size), Image.LANCZOS)
-
-    # Changed mask to a solid black square to match your barber logo background perfectly
-    mask_size = (logo.width + 10, logo.height + 10)
-    mask_img = Image.new("RGBA", mask_size, (0, 0, 0, 255)) 
-
-    # Paste black mask, then logo
-    pos = ((img_size - mask_size[0]) // 2, (img_size - mask_size[1]) // 2)
-    img.paste(mask_img, pos)
-
-    logo_pos = ((img_size - logo.width) // 2, (img_size - logo.height) // 2)
-    img.paste(logo, logo_pos, mask=logo)
-
-# ===============================
-# ADD CENTER LOGO
+# ADD CENTER LOGO WITH TARGET BORDER
 # ===============================
 if logo_path:
     logo = Image.open(logo_path).convert("RGBA")
-    max_logo_size = img_size // 6  # Keep small for scannability
+    
+    # Scale down logo to perfectly clear space inside the QR code
+    max_logo_size = img_size // 5  
     logo.thumbnail((max_logo_size, max_logo_size), Image.LANCZOS)
 
-    # Add a white circle mask behind logo for clarity
-    mask_size = (logo.width + 20, logo.height + 20)
-    mask_img = Image.new("RGBA", mask_size, (255, 255, 255, 255))
-    mask_draw = ImageDraw.Draw(mask_img)
-    mask_draw.ellipse([0, 0, mask_size[0], mask_size[1]], fill=(255, 255, 255, 255))
+    # Calculate multi-layered borders to replicate your reference image frame
+    black_border_thickness = 4
+    white_border_thickness = 12
+    
+    # Outer frame layer dimensions
+    outer_frame_size = (
+        logo.width + (white_border_thickness * 2) + (black_border_thickness * 2),
+        logo.height + (white_border_thickness * 2) + (black_border_thickness * 2)
+    )
+    
+    # Inner white backdrop layer dimensions
+    white_bg_size = (
+        logo.width + (white_border_thickness * 2),
+        logo.height + (white_border_thickness * 2)
+    )
 
-    # Paste white circle mask, then logo
-    pos = ((img_size - mask_size[0]) // 2, (img_size - mask_size[1]) // 2)
-    img.paste(mask_img, pos, mask=mask_img)
+    # 1. Draw the absolute outermost black framing outline square
+    outer_mask = Image.new("RGBA", outer_frame_size, (0, 0, 0, 255))
+    outer_pos = ((img_size - outer_frame_size[0]) // 2, (img_size - outer_frame_size[1]) // 2)
+    img.paste(outer_mask, outer_pos)
 
-    logo_pos = ((img_size - logo.width) // 2, (img_size - logo.height) // 2)
-    img.paste(logo, logo_pos, mask=logo)
+    # 2. Draw the clean white inner padding border over it
+    white_mask = Image.new("RGBA", white_bg_size, (255, 255, 255, 255))
+    white_pos = ((img_size - white_bg_size[0]) // 2, (img_size - white_bg_size[1]) // 2)
+    img.paste(white_mask, white_pos)
+
+    # 3. Draw the center black block that matches your barber logo image background
+    logo_bg_mask = Image.new("RGBA", (logo.width, logo.height), (0, 0, 0, 255))
+    logo_bg_pos = ((img_size - logo.width) // 2, (img_size - logo.height) // 2)
+    img.paste(logo_bg_mask, logo_bg_pos)
+
+    # 4. Paste the actual barber shop branding image dead center
+    img.paste(logo, logo_bg_pos, mask=logo)
 
 # ===============================
 # SAVE FINAL QR
 # ===============================
 img.save(output_file)
-print(f"✅ Black-to-gold QR with logo saved as: {output_file}")
+print(f"✅ Production asset created successfully: {output_file}\n")
