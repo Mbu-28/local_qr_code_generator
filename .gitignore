@@ -1,6 +1,7 @@
 venv
 .venv
 .venv/
+.vscode/
 __pycache__
 *.pyc
 # Ignore the specific files
